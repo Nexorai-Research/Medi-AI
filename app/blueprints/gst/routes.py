@@ -2,7 +2,7 @@
 from datetime import date
 from flask import render_template, request, send_file
 from flask_login import login_required, current_user
-from sqlalchemy import func
+from sqlalchemy import and_, extract, func
 from . import bp
 from app.extensions import db
 from app.models.sales import Sale, SaleItem
@@ -14,6 +14,13 @@ import io
 
 def _current_period():
     return request.args.get('period') or date.today().strftime('%Y-%m')
+
+
+def _in_period(column, period):
+    """Portable 'YYYY-MM' match (date_format() is MySQL-only)."""
+    year, month = period.split('-')
+    return and_(extract('year', column) == int(year),
+                extract('month', column) == int(month))
 
 
 @bp.route('/')
@@ -28,7 +35,7 @@ def index():
         func.coalesce(func.sum(Sale.igst_amount), 0),
     ).filter(
         Sale.business_id == bid,
-        func.date_format(Sale.invoice_date, '%Y-%m') == period,
+        _in_period(Sale.invoice_date, period),
         Sale.status == 'confirmed',
     ).first()
     purchase_tax = db.session.query(
@@ -38,7 +45,7 @@ def index():
         func.coalesce(func.sum(Purchase.igst_amount), 0),
     ).filter(
         Purchase.business_id == bid,
-        func.date_format(Purchase.bill_date, '%Y-%m') == period,
+        _in_period(Purchase.bill_date, period),
     ).first()
     output_tax = float(sales_tax[1] + sales_tax[2] + sales_tax[3])
     input_tax = float(purchase_tax[1] + purchase_tax[2] + purchase_tax[3])
@@ -72,7 +79,7 @@ def gstr3b():
         func.coalesce(func.sum(Sale.igst_amount), 0),
     ).filter(
         Sale.business_id == bid,
-        func.date_format(Sale.invoice_date, '%Y-%m') == period,
+        _in_period(Sale.invoice_date, period),
         Sale.status == 'confirmed',
     ).first()
     purchase_row = db.session.query(
@@ -82,7 +89,7 @@ def gstr3b():
         func.coalesce(func.sum(Purchase.igst_amount), 0),
     ).filter(
         Purchase.business_id == bid,
-        func.date_format(Purchase.bill_date, '%Y-%m') == period,
+        _in_period(Purchase.bill_date, period),
     ).first()
     data = {
         'taxable_value': float(sales_row[0]),
@@ -116,7 +123,7 @@ def hsn_summary():
         .join(Sale, SaleItem.sale_id == Sale.id)
         .filter(
             Sale.business_id == bid,
-            func.date_format(Sale.invoice_date, '%Y-%m') == period,
+            _in_period(Sale.invoice_date, period),
             Sale.status == 'confirmed',
         )
         .group_by(Medicine.hsn_code)
@@ -138,7 +145,7 @@ def itc():
         )
         .filter(
             Purchase.business_id == bid,
-            func.date_format(Purchase.bill_date, '%Y-%m') == period,
+            _in_period(Purchase.bill_date, period),
         )
         .order_by(Purchase.bill_date.desc())
         .all()

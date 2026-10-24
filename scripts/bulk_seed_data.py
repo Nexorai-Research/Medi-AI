@@ -277,6 +277,8 @@ with app.app_context():
                 reserved_qty=0, purchase_rate=med.purchase_rate, mrp=med.mrp, selling_rate=med.selling_rate,
                 rack_location=med.rack_location, is_expired=(exp < date.today()), is_damaged=(random.random() < 0.03),
                 created_at=rand_datetime(300, 1),
+                # Old updated_at on ~half the batches feeds the non-moving/dead-stock reports.
+                updated_at=rand_datetime(300, 1) if random.random() < 0.5 else datetime.now(),
             ))
     db.session.commit()
     batches = MedicineBatch.query.all()
@@ -433,12 +435,15 @@ with app.app_context():
         if not items_data:
             continue
         total = subtotal + cgst + sgst
+        pay_mode = random.choice(['cash', 'card', 'upi', 'credit'])
+        # Credit sales are only partly paid so the credit-outstanding report has rows.
+        paid = (total * Decimal(random.choice([0, 25, 50])) / 100).quantize(Decimal('0.01')) if pay_mode == 'credit' else total
         seq_code, _ = Sequence.next_number(f'invoice-{bid}-{invoice_date.year}-bulk', prefix=f'BINV-{invoice_date.year}-', pad=5)
         sale = Sale(
             business_id=bid, branch_id=branch.id, invoice_number=seq_code, patient_id=patient.id if patient else None,
             invoice_date=invoice_date, cashier_id=cashier.id, subtotal=subtotal, cgst_amount=cgst, sgst_amount=sgst,
-            igst_amount=Decimal(0), total_amount=total, paid_amount=total,
-            payment_mode=random.choice(['cash', 'card', 'upi', 'credit']), status='confirmed',
+            igst_amount=Decimal(0), total_amount=total, paid_amount=paid,
+            payment_mode=pay_mode, status='confirmed',
             created_at=invoice_date,
         )
         db.session.add(sale)

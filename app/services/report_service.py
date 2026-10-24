@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, date
 from app.extensions import db
-from sqlalchemy import text, func
+from sqlalchemy import text, func, extract
 
 def daily_sales_report(business_id, branch_id, date):
     sql = text("""
@@ -45,16 +45,27 @@ def purchase_register(business_id, branch_id, from_date, to_date):
     return [dict(r._mapping) for r in rows]
 
 def gstr1_data(business_id, period):
+    # Half-open month range instead of DATE_FORMAT() so it works on any DB.
+    year, month = (int(x) for x in period.split('-'))
+    start = date(year, month, 1)
+    end = date(year + (month == 12), month % 12 + 1, 1)
     sql = text("""
         SELECT s.invoice_number, s.invoice_date, s.customer_gstin,
                s.subtotal, s.cgst_amount, s.sgst_amount, s.igst_amount, s.total_amount
         FROM sales s
-        WHERE s.business_id = :bid AND DATE_FORMAT(s.invoice_date,'%Y-%m') = :period
+        WHERE s.business_id = :bid AND s.invoice_date >= :start AND s.invoice_date < :end
           AND s.status = 'confirmed'
         ORDER BY s.invoice_date
     """)
-    rows = db.session.execute(sql, {'bid': business_id, 'period': period}).fetchall()
-    return [dict(r._mapping) for r in rows]
+    rows = db.session.execute(sql, {'bid': business_id, 'start': start, 'end': end}).fetchall()
+    out = []
+    for r in rows:
+        row = dict(r._mapping)
+        # Raw text() queries return date strings on SQLite; templates expect datetime.
+        if isinstance(row['invoice_date'], str):
+            row['invoice_date'] = datetime.fromisoformat(row['invoice_date'])
+        out.append(row)
+    return out
 
 def pl_statement(business_id, from_date, to_date):
     rev = db.session.execute(text(
@@ -68,11 +79,12 @@ def pl_statement(business_id, from_date, to_date):
 
 def monthly_sales_report(business_id, year):
     from app.models.sales import Sale
+    month = extract('month', Sale.invoice_date)
     rows = (
-        db.session.query(func.month(Sale.invoice_date).label('month'), func.coalesce(func.sum(Sale.total_amount), 0).label('total'))
-        .filter(Sale.business_id == business_id, func.year(Sale.invoice_date) == year, Sale.status == 'confirmed')
-        .group_by(func.month(Sale.invoice_date))
-        .order_by(func.month(Sale.invoice_date))
+        db.session.query(month.label('month'), func.coalesce(func.sum(Sale.total_amount), 0).label('total'))
+        .filter(Sale.business_id == business_id, extract('year', Sale.invoice_date) == year, Sale.status == 'confirmed')
+        .group_by(month)
+        .order_by(month)
         .all()
     )
     return [{'month': r.month, 'total': float(r.total)} for r in rows]

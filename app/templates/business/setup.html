@@ -50,41 +50,41 @@
       {% if step == 1 %}
         <div class="row g-3">
           <div class="col-12">
-            {% include "business/_field.html" with field=form.name %}
+            {% with field=form.name %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-8">
-            {% include "business/_field.html" with field=form.legal_name %}
+            {% with field=form.legal_name %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-4">
-            {% include "business/_field.html" with field=form.short_name %}
+            {% with field=form.short_name %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.phone %}
+            {% with field=form.phone %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.alt_phone %}
+            {% with field=form.alt_phone %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-8">
-            {% include "business/_field.html" with field=form.email %}
+            {% with field=form.email %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-4">
-            {% include "business/_field.html" with field=form.website %}
+            {% with field=form.website %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-12">
-            {% include "business/_field.html" with field=form.tagline %}
+            {% with field=form.tagline %}{% include "business/_field.html" %}{% endwith %}
           </div>
         </div>
 
       {% elif step == 2 %}
         <div class="row g-3">
           <div class="col-12">
-            {% include "business/_field.html" with field=form.address_line1 %}
+            {% with field=form.address_line1 %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-12">
-            {% include "business/_field.html" with field=form.address_line2 %}
+            {% with field=form.address_line2 %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-5">
-            {% include "business/_field.html" with field=form.city %}
+            {% with field=form.city %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-4">
             <label class="form-label">{{ form.state.label.text }}</label>
@@ -94,53 +94,53 @@
             {% endfor %}
           </div>
           <div class="col-md-3">
-            {% include "business/_field.html" with field=form.pincode %}
+            {% with field=form.pincode %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-12"><hr style="border-color:var(--border);"></div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.gstin %}
+            {% with field=form.gstin %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.pan %}
+            {% with field=form.pan %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.drug_license_no %}
+            {% with field=form.drug_license_no %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.drug_license_no2 %}
+            {% with field=form.drug_license_no2 %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.fssai_no %}
+            {% with field=form.fssai_no %}{% include "business/_field.html" %}{% endwith %}
           </div>
         </div>
 
       {% elif step == 3 %}
         <div class="row g-3">
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.bank_name %}
+            {% with field=form.bank_name %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.bank_branch %}
+            {% with field=form.bank_branch %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-6">
-            {% include "business/_field.html" with field=form.bank_account_no %}
+            {% with field=form.bank_account_no %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-3">
-            {% include "business/_field.html" with field=form.bank_ifsc %}
+            {% with field=form.bank_ifsc %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-3">
-            {% include "business/_field.html" with field=form.upi_id %}
+            {% with field=form.upi_id %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-12"><hr style="border-color:var(--border);"></div>
           <div class="col-md-4">
-            {% include "business/_field.html" with field=form.invoice_prefix %}
+            {% with field=form.invoice_prefix %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-md-4">
             <label class="form-label">Business Logo</label>
             {{ form.logo_file(class="form-control") }}
           </div>
           <div class="col-12">
-            {% include "business/_field.html" with field=form.invoice_terms textarea=true %}
+            {% with field=form.invoice_terms, textarea=true %}{% include "business/_field.html" %}{% endwith %}
           </div>
           <div class="col-12"><hr style="border-color:var(--border);"></div>
           <div class="col-12">

@@ -22,14 +22,14 @@
         <div class="card-header"><span class="card-title">Basic Information</span></div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-12">{% include "business/_field.html" with field=form.name %}</div>
-            <div class="col-md-8">{% include "business/_field.html" with field=form.legal_name %}</div>
-            <div class="col-md-4">{% include "business/_field.html" with field=form.short_name %}</div>
-            <div class="col-md-6">{% include "business/_field.html" with field=form.phone %}</div>
-            <div class="col-md-6">{% include "business/_field.html" with field=form.alt_phone %}</div>
-            <div class="col-md-8">{% include "business/_field.html" with field=form.email %}</div>
-            <div class="col-md-4">{% include "business/_field.html" with field=form.website %}</div>
-            <div class="col-12">{% include "business/_field.html" with field=form.tagline %}</div>
+            <div class="col-12">{% with field=form.name %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-8">{% with field=form.legal_name %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-4">{% with field=form.short_name %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-6">{% with field=form.phone %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-6">{% with field=form.alt_phone %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-8">{% with field=form.email %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-4">{% with field=form.website %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-12">{% with field=form.tagline %}{% include "business/_field.html" %}{% endwith %}</div>
           </div>
         </div>
       </div>
@@ -39,15 +39,15 @@
         <div class="card-header"><span class="card-title">Address</span></div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-12">{% include "business/_field.html" with field=form.address_line1 %}</div>
-            <div class="col-12">{% include "business/_field.html" with field=form.address_line2 %}</div>
-            <div class="col-md-5">{% include "business/_field.html" with field=form.city %}</div>
+            <div class="col-12">{% with field=form.address_line1 %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-12">{% with field=form.address_line2 %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-5">{% with field=form.city %}{% include "business/_field.html" %}{% endwith %}</div>
             <div class="col-md-4">
               <label class="form-label">{{ form.state.label.text }}</label>
               {{ form.state(class="form-select" + (" is-invalid" if form.state.errors else "")) }}
               {% for e in form.state.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
             </div>
-            <div class="col-md-3">{% include "business/_field.html" with field=form.pincode %}</div>
+            <div class="col-md-3">{% with field=form.pincode %}{% include "business/_field.html" %}{% endwith %}</div>
           </div>
         </div>
       </div>
@@ -57,11 +57,11 @@
         <div class="card-header"><span class="card-title">Regulatory &amp; Tax</span></div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-6">{% include "business/_field.html" with field=form.gstin %}</div>
-            <div class="col-md-6">{% include "business/_field.html" with field=form.pan %}</div>
-            <div class="col-md-6">{% include "business/_field.html" with field=form.drug_license_no %}</div>
-            <div class="col-md-6">{% include "business/_field.html" with field=form.drug_license_no2 %}</div>
-            <div class="col-md-6">{% include "business/_field.html" with field=form.fssai_no %}</div>
+            <div class="col-md-6">{% with field=form.gstin %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-6">{% with field=form.pan %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-6">{% with field=form.drug_license_no %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-6">{% with field=form.drug_license_no2 %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-6">{% with field=form.fssai_no %}{% include "business/_field.html" %}{% endwith %}</div>
           </div>
         </div>
       </div>
@@ -71,11 +71,11 @@
         <div class="card-header"><span class="card-title">Banking Details</span></div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-6">{% include "business/_field.html" with field=form.bank_name %}</div>
-            <div class="col-md-6">{% include "business/_field.html" with field=form.bank_branch %}</div>
-            <div class="col-md-6">{% include "business/_field.html" with field=form.bank_account_no %}</div>
-            <div class="col-md-3">{% include "business/_field.html" with field=form.bank_ifsc %}</div>
-            <div class="col-md-3">{% include "business/_field.html" with field=form.upi_id %}</div>
+            <div class="col-md-6">{% with field=form.bank_name %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-6">{% with field=form.bank_branch %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-6">{% with field=form.bank_account_no %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-3">{% with field=form.bank_ifsc %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-md-3">{% with field=form.upi_id %}{% include "business/_field.html" %}{% endwith %}</div>
           </div>
         </div>
       </div>
@@ -85,9 +85,9 @@
         <div class="card-header"><span class="card-title">Invoice Settings</span></div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-3">{% include "business/_field.html" with field=form.invoice_prefix %}</div>
-            <div class="col-12">{% include "business/_field.html" with field=form.invoice_terms textarea=true %}</div>
-            <div class="col-12">{% include "business/_field.html" with field=form.invoice_footer textarea=true %}</div>
+            <div class="col-md-3">{% with field=form.invoice_prefix %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-12">{% with field=form.invoice_terms, textarea=true %}{% include "business/_field.html" %}{% endwith %}</div>
+            <div class="col-12">{% with field=form.invoice_footer, textarea=true %}{% include "business/_field.html" %}{% endwith %}</div>
           </div>
         </div>
       </div>

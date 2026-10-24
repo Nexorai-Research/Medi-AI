@@ -60,6 +60,9 @@ def create_app(config_name: str = None) -> Flask:
     cfg = get_config(config_name)
     app.config.from_object(cfg)
 
+    if not (app.config.get('DEBUG') or app.config.get('TESTING')) and             app.config.get('SECRET_KEY') in (None, '', 'fallback-secret-key-change-me'):
+        raise RuntimeError('SECRET_KEY must be set to a strong random value outside development.')
+
     # Ensure upload directory exists
     os.makedirs(app.config.get('UPLOAD_FOLDER', 'app/static/uploads'), exist_ok=True)
 
@@ -98,6 +101,9 @@ def create_app(config_name: str = None) -> Flask:
 
     # ── Blueprints ─────────────────────────────────────────────────────────────
     _register_blueprints(app)
+
+    from .utils.access import register_access_control
+    register_access_control(app)
 
     # ── Context processors ─────────────────────────────────────────────────────
     @app.context_processor

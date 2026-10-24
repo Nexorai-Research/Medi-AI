@@ -10,7 +10,7 @@ ROLE_HIERARCHY = {
     'viewer':            1,
     'doctor':            2,
     'cashier':           3,
-    'store_manager':     3,
+    'store_manager':     5,
     'accountant':        4,
     'inventory_manager': 5,
     'pharmacist':        6,

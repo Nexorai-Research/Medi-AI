@@ -11,7 +11,8 @@ app = create_app(os.environ.get('FLASK_ENV', 'development'))
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(
-        host='0.0.0.0',
+        # Werkzeug's debugger allows code execution, so stay on localhost unless HOST is set.
+        host=os.environ.get('HOST', '127.0.0.1'),
         port=port,
-        debug=app.config.get('DEBUG', True),
+        debug=app.config.get('DEBUG', False),
     )

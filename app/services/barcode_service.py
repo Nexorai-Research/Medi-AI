@@ -154,23 +154,6 @@ def generate_medicine_label_pdf(batch_ids: list) -> bytes:
 
     c = pdfcanvas.Canvas(buffer, pagesize=A4)
 
-    styles = getSampleStyleSheet()
-    small_style = ParagraphStyle(
-        'SmallCenter',
-        parent=styles['Normal'],
-        fontSize=6,
-        leading=7,
-        alignment=TA_CENTER,
-    )
-    name_style = ParagraphStyle(
-        'NameStyle',
-        parent=styles['Normal'],
-        fontSize=7,
-        leading=8,
-        alignment=TA_CENTER,
-        fontName='Helvetica-Bold',
-    )
-
     def draw_label(canvas_obj, x, y, batch):
         """Draw a single medicine label at position (x, y) — bottom-left corner."""
         med = batch.medicine
@@ -179,8 +162,6 @@ def generate_medicine_label_pdf(batch_ids: list) -> bytes:
 
         pad = 2 * mm
         inner_w = label_w - 2 * pad
-        inner_h = label_h - 2 * pad
-        lx = x + pad
         ly = y + pad
 
         # Border

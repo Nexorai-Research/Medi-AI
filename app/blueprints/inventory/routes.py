@@ -323,7 +323,6 @@ def transfer():
                 flash('Insufficient stock in selected batch.', 'danger')
             else:
                 from ...models.sequence import Sequence
-                from ...models.stock_adjustment import StockAdjustment, StockAdjustmentItem
 
                 # Deduct from source
                 src_batch.quantity -= form.qty.data

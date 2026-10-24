@@ -179,7 +179,6 @@ def create():
         discount_amount = Decimal('0.00')
         cgst_total      = Decimal('0.00')
         sgst_total      = Decimal('0.00')
-        igst_total      = Decimal('0.00')
 
         purchase_items = []
         for it in items_data:

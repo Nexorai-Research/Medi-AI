@@ -65,7 +65,7 @@ class DevelopmentConfig(Config):
     TESTING = False
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DEV_DATABASE_URL',
-        'mysql+pymysql://krishna:mauli10@localhost/msms_dev'
+        'mysql+pymysql://root@localhost/msms_dev'
     )
     SQLALCHEMY_ECHO = False
     SESSION_COOKIE_SECURE = False
@@ -82,7 +82,7 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'TEST_DATABASE_URL',
-        'mysql+pymysql://krishna:mauli10@localhost/msms_test'
+        'mysql+pymysql://root@localhost/msms_test'
     )
     WTF_CSRF_ENABLED = False
     RATELIMIT_ENABLED = False
@@ -95,7 +95,7 @@ class ProductionConfig(Config):
     TESTING = False
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'PROD_DATABASE_URL',
-        'mysql+pymysql://krishna:mauli10@localhost/msms_prod'
+        'mysql+pymysql://root@localhost/msms_prod'
     )
     SQLALCHEMY_RECORD_QUERIES = False
     SESSION_COOKIE_SECURE = True

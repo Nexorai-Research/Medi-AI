@@ -72,10 +72,15 @@ def pl_statement(business_id, from_date, to_date):
         "SELECT COALESCE(SUM(total_amount),0) as revenue FROM sales WHERE business_id=:bid AND DATE(invoice_date) BETWEEN :fd AND :td AND status='confirmed'"
     ), {'bid': business_id, 'fd': from_date, 'td': to_date}).scalar()
     cogs = db.session.execute(text(
-        "SELECT COALESCE(SUM(pi.purchase_rate * si.quantity),0) FROM sale_items si JOIN medicine_batches mb ON si.batch_id=mb.id JOIN purchase_items pi ON mb.purchase_item_id=pi.id JOIN sales s ON si.sale_id=s.id WHERE s.business_id=:bid AND DATE(s.invoice_date) BETWEEN :fd AND :td"
+        "SELECT COALESCE(SUM(COALESCE(pi.purchase_rate, mb.purchase_rate, 0) * si.quantity),0) FROM sale_items si JOIN medicine_batches mb ON si.batch_id=mb.id LEFT JOIN purchase_items pi ON mb.purchase_item_id=pi.id JOIN sales s ON si.sale_id=s.id WHERE s.business_id=:bid AND DATE(s.invoice_date) BETWEEN :fd AND :td AND s.status='confirmed'"
+    ), {'bid': business_id, 'fd': from_date, 'td': to_date}).scalar() or 0
+    # Operating expenses booked in the ledger; '5000' Purchase Expense is already covered by COGS.
+    expenses = db.session.execute(text(
+        "SELECT COALESCE(SUM(l.debit - l.credit),0) FROM journal_entry_lines l JOIN journal_entries e ON l.entry_id=e.id JOIN chart_of_accounts a ON l.account_id=a.id WHERE e.business_id=:bid AND a.type='expense' AND a.code<>'5000' AND e.entry_date BETWEEN :fd AND :td"
     ), {'bid': business_id, 'fd': from_date, 'td': to_date}).scalar() or 0
     gross = float(rev or 0) - float(cogs)
-    return {'revenue': float(rev or 0), 'cogs': float(cogs), 'gross_profit': gross, 'expenses': 0, 'net_profit': gross}
+    expenses = float(expenses)
+    return {'revenue': float(rev or 0), 'cogs': float(cogs), 'gross_profit': gross, 'expenses': expenses, 'net_profit': gross - expenses}
 
 def monthly_sales_report(business_id, year):
     from app.models.sales import Sale

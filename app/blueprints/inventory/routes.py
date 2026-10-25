@@ -237,6 +237,14 @@ def adjust():
             flash('Please select a medicine and batch.', 'danger')
             return redirect(url_for('inventory.adjust'))
 
+        batch = MedicineBatch.query.filter_by(id=form.batch_id.data, medicine_id=form.medicine_id.data).first()
+        if not batch or not batch.medicine or batch.medicine.business_id != business.id:
+            flash('Invalid medicine or batch.', 'danger')
+            return redirect(url_for('inventory.adjust'))
+        if batch.quantity + form.qty_change.data < 0:
+            flash(f'Cannot reduce stock below zero (current: {batch.quantity}).', 'danger')
+            return redirect(url_for('inventory.adjust'))
+
         try:
             adj = adjust_stock(
                 batch_id   = form.batch_id.data,
@@ -318,7 +326,10 @@ def transfer():
         if from_bid == to_bid:
             flash('Source and destination branches cannot be the same.', 'danger')
         else:
-            src_batch = MedicineBatch.query.get(form.batch_id.data)
+            src_batch = MedicineBatch.query.filter_by(
+                id=form.batch_id.data, branch_id=from_bid, medicine_id=form.medicine_id.data).first()
+            if src_batch and (not src_batch.medicine or src_batch.medicine.business_id != business.id):
+                src_batch = None
             if not src_batch or src_batch.available_qty < form.qty.data:
                 flash('Insufficient stock in selected batch.', 'danger')
             else:

@@ -46,7 +46,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label small">{{ 'Set New Password' if user else 'Password' }}</label>
-        <input type="password" name="password" class="form-control form-control-sm" placeholder="{{ 'Leave blank to keep current' if user else 'Default: Changeme@123' }}">
+        <input type="password" name="password" class="form-control form-control-sm" placeholder="{{ 'Leave blank to keep current' if user else 'Min 8 chars: upper, lower, digit, special' }}" {% if not user %}required{% endif %}>
       </div>
       {% if user %}
       <div class="col-12">

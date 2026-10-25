@@ -62,7 +62,7 @@ def patient_history(patient_id):
 def redeem(patient_id):
     patient = Patient.query.filter_by(id=patient_id, business_id=current_user.business_id).first_or_404()
     program = _get_program(current_user.business_id)
-    points = int(request.form.get('points') or 0)
+    points = request.form.get('points', type=int) or 0
     if points < program.min_redeem_points:
         flash(f'Minimum {program.min_redeem_points} points required to redeem.', 'danger')
         return redirect(url_for('loyalty.patient_history', patient_id=patient.id))

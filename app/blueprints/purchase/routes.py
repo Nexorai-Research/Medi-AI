@@ -1,6 +1,8 @@
 """Purchase blueprint routes."""
 import os
 import json
+import uuid
+from werkzeug.utils import secure_filename
 from datetime import datetime, date
 from decimal import Decimal
 
@@ -182,19 +184,30 @@ def create():
 
         purchase_items = []
         for it in items_data:
-            med_id      = int(it.get('medicine_id', 0))
-            qty         = int(it.get('quantity', 1))
-            free_qty    = int(it.get('free_quantity', 0))
-            rate        = Decimal(str(it.get('purchase_rate', 0)))
-            mrp         = Decimal(str(it.get('mrp', 0)))
-            disc_pct    = Decimal(str(it.get('discount_pct', 0)))
-            gst_rate    = Decimal(str(it.get('gst_rate', 12)))
-            batch_no    = it.get('batch_number', '').strip()
+            try:
+                med_id      = int(it.get('medicine_id', 0))
+                qty         = int(it.get('quantity', 1))
+                free_qty    = int(it.get('free_quantity', 0))
+                rate        = Decimal(str(it.get('purchase_rate', 0)))
+                mrp         = Decimal(str(it.get('mrp', 0)))
+                disc_pct    = Decimal(str(it.get('discount_pct', 0)))
+                gst_rate    = Decimal(str(it.get('gst_rate', 12)))
+                batch_no    = str(it.get('batch_number') or '').strip()
+            except (ValueError, TypeError, ArithmeticError):
+                flash('Invalid number in item list.', 'danger')
+                return render_template('purchase/create.html', form=form, title='New Purchase')
             expiry_str  = it.get('expiry_date', '')
             mfg_str     = it.get('mfg_date', '')
 
             if not med_id or not batch_no or not expiry_str:
                 continue
+            if (qty < 1 or free_qty < 0 or rate < 0 or mrp < 0 or not 0 <= disc_pct <= 100
+                    or not 0 <= gst_rate <= 100 or not (rate.is_finite() and mrp.is_finite())):
+                flash('Quantity must be positive and rates/discounts must be valid.', 'danger')
+                return render_template('purchase/create.html', form=form, title='New Purchase')
+            if not Medicine.query.filter_by(id=med_id, business_id=business_id, is_deleted=False).first():
+                flash('Unknown medicine in item list.', 'danger')
+                return render_template('purchase/create.html', form=form, title='New Purchase')
 
             try:
                 expiry_date = datetime.strptime(expiry_str, '%Y-%m-%d').date()
@@ -249,6 +262,9 @@ def create():
 
         total_amount = subtotal - discount_amount + cgst_total + sgst_total
         paid_amount  = form.paid_amount.data or Decimal('0.00')
+        if paid_amount < 0 or paid_amount > total_amount:
+            flash(f'Paid amount must be between 0 and the bill total (Rs. {total_amount:.2f}).', 'danger')
+            return render_template('purchase/create.html', form=form, title='New Purchase')
         due_amount   = total_amount - paid_amount
 
         payment_status = 'unpaid'
@@ -303,7 +319,7 @@ def create():
         if ocr_file:
             upload_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads'), 'bills')
             os.makedirs(upload_dir, exist_ok=True)
-            filename = f'{bill_number}_{ocr_file.filename}'
+            filename = f'{bill_number}_{secure_filename(ocr_file.filename) or "bill"}'
             filepath = os.path.join(upload_dir, filename)
             ocr_file.save(filepath)
             purchase.ocr_bill_path = filepath
@@ -437,7 +453,10 @@ def ocr_upload():
         current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads'), 'ocr_temp'
     )
     os.makedirs(upload_dir, exist_ok=True)
-    filepath = os.path.join(upload_dir, file.filename)
+    safe_name = secure_filename(file.filename)
+    if not safe_name or safe_name.rsplit('.', 1)[-1].lower() not in {'png', 'jpg', 'jpeg', 'pdf', 'tif', 'tiff', 'bmp'}:
+        return jsonify({'success': False, 'error': 'Unsupported file type.'}), 400
+    filepath = os.path.join(upload_dir, f'{uuid.uuid4().hex[:8]}_{safe_name}')
     file.save(filepath)
 
     result = extract_purchase_bill(filepath)
@@ -492,8 +511,14 @@ def record_payment(purchase_id):
         flash('Invalid payment amount.', 'danger')
         return redirect(url_for('purchase.detail', purchase_id=purchase_id))
 
-    if amount <= 0:
+    if not amount.is_finite() or amount <= 0:
         flash('Amount must be greater than zero.', 'danger')
+        return redirect(url_for('purchase.detail', purchase_id=purchase_id))
+    if amount > purchase.due_amount:
+        flash(f'Payment exceeds the due amount (Rs. {purchase.due_amount}).', 'danger')
+        return redirect(url_for('purchase.detail', purchase_id=purchase_id))
+    if mode not in Purchase.PAYMENT_MODES:
+        flash('Invalid payment mode.', 'danger')
         return redirect(url_for('purchase.detail', purchase_id=purchase_id))
 
     purchase.paid_amount  += amount

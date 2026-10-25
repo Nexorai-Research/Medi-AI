@@ -10,7 +10,7 @@
   <div class="row border-bottom pb-3 mb-3">
     <div class="col-8">
       <h4 style="color:var(--accent)">{{ sale.branch.business.name if sale.branch else '' }}</h4>
-      <div class="small text-muted">GST: {{ sale.branch.business.gst_number if sale.branch else '' }}</div>
+      <div class="small text-muted">GST: {{ sale.branch.business.gstin if sale.branch else '' }}</div>
       <div class="small text-muted">Drug License: {{ sale.branch.business.drug_license_no if sale.branch else '' }}</div>
     </div>
     <div class="col-4 text-end">
@@ -52,6 +52,8 @@
       <tr><td colspan="9" class="text-end">Subtotal</td><td>₹{{ "%.2f"|format(sale.subtotal) }}</td></tr>
       <tr><td colspan="9" class="text-end">CGST</td><td>₹{{ "%.2f"|format(sale.cgst_amount) }}</td></tr>
       <tr><td colspan="9" class="text-end">SGST</td><td>₹{{ "%.2f"|format(sale.sgst_amount) }}</td></tr>
+      {% if sale.discount_amount and sale.discount_amount > 0 %}<tr><td colspan="9" class="text-end">Discount</td><td>-₹{{ "%.2f"|format(sale.discount_amount) }}</td></tr>{% endif %}
+      {% if sale.round_off and sale.round_off != 0 %}<tr><td colspan="9" class="text-end">Round off</td><td>₹{{ "%.2f"|format(sale.round_off) }}</td></tr>{% endif %}
       <tr><td colspan="9" class="text-end fw-bold">Grand Total</td><td class="fw-bold" style="color:var(--accent)">₹{{ "%.2f"|format(sale.total_amount) }}</td></tr>
     </tfoot>
   </table>

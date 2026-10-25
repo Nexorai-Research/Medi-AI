@@ -1,5 +1,6 @@
 """Returns routes: sales returns and purchase returns."""
 from flask import render_template, request, redirect, url_for, flash
+from sqlalchemy import func
 from flask_login import login_required, current_user
 from . import bp
 from app.extensions import db
@@ -33,11 +34,27 @@ def sales_return_new():
         sale_item_id = request.form.get('sale_item_id')
         sale = Sale.query.filter_by(id=sale_id, business_id=bid).first_or_404()
         sale_item = SaleItem.query.filter_by(id=sale_item_id, sale_id=sale.id).first_or_404()
-        qty = request.form.get('quantity', type=int) or sale_item.quantity
+        qty = request.form.get('quantity', type=int)
+        if qty is None:
+            qty = sale_item.quantity
         reason = request.form.get('reason', '').strip()
         refund_mode = request.form.get('refund_mode', 'cash')
 
-        refund_amount = (sale_item.total_amount / sale_item.quantity) * qty if sale_item.quantity else 0
+        already_returned = db.session.query(func.coalesce(func.sum(SalesReturnItem.quantity), 0)).filter(
+            SalesReturnItem.sale_item_id == sale_item.id).scalar()
+        returnable = sale_item.quantity - already_returned
+        error = None
+        if sale.status != 'confirmed':
+            error = 'Only confirmed invoices can be returned.'
+        elif refund_mode not in ('cash', 'card', 'upi', 'credit_note'):
+            error = 'Invalid refund mode.'
+        elif qty < 1 or qty > returnable:
+            error = f'Return quantity must be between 1 and {returnable}.'
+        if error:
+            flash(error, 'danger')
+            return redirect(url_for('returns.sales_return_new', invoice=sale.invoice_number))
+
+        refund_amount = round((sale_item.total_amount / sale_item.quantity) * qty, 2) if sale_item.quantity else 0
         code, _ = Sequence.next_number(f'salesreturn-{bid}', prefix='SRET-', pad=5)
         sret = SalesReturn(
             business_id=bid, branch_id=sale.branch_id, return_number=code,

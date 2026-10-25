@@ -41,9 +41,14 @@ SAFE_METHODS = {'GET', 'HEAD', 'OPTIONS'}
 WRITE_OK_BLUEPRINTS = {'auth', 'notifications', 'security'}
 
 
+# GET endpoints that only render an input form for a write action.
+FORM_ENDPOINT_SUFFIXES = ('.create', '.adjust', '.transfer', '.upload', '.import_rx', '.sales_return_new',
+                          '.orders_create')
+
+
 def _action(endpoint: str) -> str:
     if request.method in SAFE_METHODS:
-        return 'view'
+        return 'create' if endpoint.endswith(FORM_ENDPOINT_SUFFIXES) else 'view'
     if 'delete' in endpoint or 'remove' in endpoint:
         return 'delete'
     if 'edit' in endpoint or 'update' in endpoint:
@@ -76,6 +81,10 @@ def register_access_control(app):
         if (role in READ_ONLY_ROLES and request.method not in SAFE_METHODS
                 and request.blueprint not in WRITE_OK_BLUEPRINTS):
             abort(403)
+        if (role in READ_ONLY_ROLES and request.method in SAFE_METHODS
+                and (request.endpoint or '').endswith(FORM_ENDPOINT_SUFFIXES)
+                and request.blueprint not in WRITE_OK_BLUEPRINTS):
+            abort(403)  # read-only roles have no use for entry forms
         if module is None:
             return
 

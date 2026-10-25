@@ -6,18 +6,20 @@ from app.models.sales import Sale, SaleItem
 from app.models.medicine import Medicine, MedicineBatch
 from app.models.patient import Patient
 from app.models.prescription import Prescription
-from app.services.billing_service import save_invoice, generate_invoice_pdf
+from app.services.billing_service import save_invoice, generate_invoice_pdf, validate_cart
 from app.services.ai_service import check_drug_interactions_bulk
 from app.utils.decorators import role_required
 from app.models.audit_log import AuditLog
 import io
+from sqlalchemy.orm import joinedload, selectinload
 
 @bp.route('/')
 @login_required
 def index():
     page = request.args.get('page', 1, type=int)
     q = request.args.get('q', '')
-    query = Sale.query.filter_by(business_id=current_user.business_id)
+    query = (Sale.query.filter_by(business_id=current_user.business_id)
+             .options(joinedload(Sale.patient), selectinload(Sale.items)))  # list shows both per row
     if q:
         query = query.filter(Sale.invoice_number.ilike(f'%{q}%'))
     sales = query.order_by(Sale.invoice_date.desc()).paginate(page=page, per_page=20)
@@ -32,22 +34,20 @@ def billing():
 @bp.route('/billing/save', methods=['POST'])
 @login_required
 def billing_save():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     items = data.get('items', [])
     if not items:
         return jsonify({'error': 'Cart is empty'}), 422
+
+    items, error = validate_cart(items, current_user.business_id, current_user.branch_id)
+    if error:
+        return jsonify({'error': error}), 422
 
     # Schedule H gate
     for item in items:
         med = Medicine.query.get(item['medicine_id'])
         if med and med.prescription_req and not data.get('prescription_id'):
             return jsonify({'error': f'Prescription required for: {med.name}'}), 422
-
-    # Stock check
-    for item in items:
-        batch = MedicineBatch.query.get(item['batch_id'])
-        if not batch or batch.quantity < item['qty']:
-            return jsonify({'error': f'Insufficient stock for batch {item.get("batch_number", "")}'}), 422
 
     # Drug interaction gate
     medicine_ids = [item['medicine_id'] for item in items]
@@ -60,6 +60,18 @@ def billing_save():
     from app.models.business import Business
     business = Business.query.get(current_user.business_id)
 
+    patient_id, rx_id = data.get('patient_id'), data.get('prescription_id')
+    if patient_id and not Patient.query.filter_by(id=patient_id, business_id=current_user.business_id).first():
+        return jsonify({'error': 'Patient not found'}), 422
+    if rx_id and not Prescription.query.filter_by(id=rx_id, business_id=current_user.business_id).first():
+        return jsonify({'error': 'Prescription not found'}), 422
+    if data.get('payment_mode', 'cash') not in ('cash', 'card', 'upi', 'credit', 'wallet'):
+        return jsonify({'error': 'Invalid payment mode'}), 422
+    try:
+        paid_amount = max(float(data.get('paid_amount') or 0), 0)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid paid amount'}), 422
+
     try:
         sale = save_invoice(
             sale_data={
@@ -67,7 +79,7 @@ def billing_save():
                 'branch_id': current_user.branch_id,
                 'patient_id': data.get('patient_id'),
                 'prescription_id': data.get('prescription_id'),
-                'paid_amount': data.get('paid_amount', 0),
+                'paid_amount': paid_amount,
                 'payment_mode': data.get('payment_mode', 'cash'),
                 'discount_amount': data.get('discount_amount', 0),
                 'business_gstin': business.gstin if business else '',

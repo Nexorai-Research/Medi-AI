@@ -1,4 +1,5 @@
 """Patients CRUD routes."""
+import re
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -38,11 +39,21 @@ def create():
             chronic_conditions=request.form.get('chronic_conditions', '').strip() or None,
             is_active=True,
         )
+        error = None
         dob = request.form.get('dob')
         if dob:
-            p.dob = datetime.strptime(dob, '%Y-%m-%d').date()
+            try:
+                p.dob = datetime.strptime(dob, '%Y-%m-%d').date()
+            except ValueError:
+                error = 'Invalid date of birth.'
         if not p.full_name:
-            flash('Patient name is required.', 'danger')
+            error = 'Patient name is required.'
+        elif p.phone and not re.fullmatch(r'\+?\d{10,13}', p.phone):
+            error = 'Enter a valid phone number (10-13 digits).'
+        elif p.phone and Patient.query.filter_by(business_id=bid, phone=p.phone, is_active=True).first():
+            error = 'A patient with this phone number already exists.'
+        if error:
+            flash(error, 'danger')
             return render_template('patients/form.html', title='Add Patient', patient=None)
         db.session.add(p)
         db.session.commit()
@@ -65,8 +76,26 @@ def detail(patient_id):
 def edit(patient_id):
     patient = Patient.query.filter_by(id=patient_id, business_id=current_user.business_id).first_or_404()
     if request.method == 'POST':
+        phone = request.form.get('phone', '').strip()
+        dob = request.form.get('dob')
+        error = None
+        if not request.form.get('full_name', '').strip():
+            error = 'Patient name is required.'
+        elif phone and not re.fullmatch(r'\+?\d{10,13}', phone):
+            error = 'Enter a valid phone number (10-13 digits).'
+        elif phone and Patient.query.filter(Patient.business_id == current_user.business_id, Patient.phone == phone,
+                                             Patient.is_active.is_(True), Patient.id != patient.id).first():
+            error = 'Another patient already uses this phone number.'
+        if dob:
+            try:
+                datetime.strptime(dob, '%Y-%m-%d')
+            except ValueError:
+                error = 'Invalid date of birth.'
+        if error:
+            flash(error, 'danger')
+            return render_template('patients/form.html', title='Edit Patient', patient=patient)
         patient.full_name = request.form.get('full_name', '').strip()
-        patient.phone = request.form.get('phone', '').strip()
+        patient.phone = phone
         patient.email = request.form.get('email', '').strip() or None
         patient.gender = request.form.get('gender') or None
         patient.address = request.form.get('address', '').strip() or None
@@ -75,7 +104,6 @@ def edit(patient_id):
         patient.allergies = request.form.get('allergies', '').strip() or None
         patient.chronic_conditions = request.form.get('chronic_conditions', '').strip() or None
         patient.is_active = 'is_active' in request.form
-        dob = request.form.get('dob')
         if dob:
             patient.dob = datetime.strptime(dob, '%Y-%m-%d').date()
         db.session.commit()

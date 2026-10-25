@@ -18,11 +18,20 @@ def demand_forecast(medicine_id, branch_id, days_ahead=30):
 def suggest_reorder(business_id, branch_id):
     from app.models.medicine import Medicine, MedicineBatch
     medicines = Medicine.query.filter_by(business_id=business_id, is_active=True, is_deleted=False).all()
+    # Two grouped queries for all medicines instead of two queries per medicine.
+    stock_by_med = dict(db.session.query(MedicineBatch.medicine_id, db.func.sum(MedicineBatch.quantity))
+                        .filter(MedicineBatch.branch_id == branch_id, MedicineBatch.is_expired.is_(False))
+                        .group_by(MedicineBatch.medicine_id).all())
+    sold_by_med = dict(db.session.execute(text("""
+        SELECT si.medicine_id, SUM(si.quantity)
+        FROM sale_items si JOIN sales s ON si.sale_id=s.id
+        WHERE s.branch_id=:bid AND s.invoice_date >= :since AND s.status='confirmed'
+        GROUP BY si.medicine_id
+    """), {'bid': branch_id, 'since': datetime.utcnow() - timedelta(days=90)}).all())
     suggestions = []
     for med in medicines:
-        current_stock = sum(b.quantity for b in med.batches if not b.is_expired and b.branch_id == branch_id)
-        forecast = demand_forecast(med.id, branch_id)
-        avg_daily = forecast['avg_daily']
+        current_stock = int(stock_by_med.get(med.id) or 0)
+        avg_daily = round(float(sold_by_med.get(med.id) or 0) / 90, 2)
         days_left = round(current_stock / avg_daily) if avg_daily > 0 else 999
         suggested_qty = max(0, round(avg_daily * 30) - current_stock + med.reorder_level)
         if days_left < 30 or current_stock <= med.reorder_level:
